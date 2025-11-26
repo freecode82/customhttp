@@ -91,25 +91,25 @@ async function autoExtractIfNeeded(filePath) {
     const base = path.basename(filePath);
 
     if (base.endsWith('.tar.gz') || base.endsWith('.tgz')) {
-        console.log(`tar.gz 해제 중: ${filePath}`);
+        console.log(`������ tar.gz 해제 중: ${filePath}`);
         await tar.x({
             file: filePath,
             cwd: dir,
             gzip: true
         });
         fs.unlinkSync(filePath);
-        console.log(`해제 완료 (tar.gz): ${dir}`);
+        console.log(`✅ 해제 완료 (tar.gz): ${dir}`);
     } else if (base.endsWith('.tar')) {
-        console.log(`tar 해제 중: ${filePath}`);
+        console.log(`������ tar 해제 중: ${filePath}`);
         await tar.x({
             file: filePath,
             cwd: dir,
             gzip: false
         });
         fs.unlinkSync(filePath);
-        console.log(`해제 완료 (tar): ${dir}`);
+        console.log(`✅ 해제 완료 (tar): ${dir}`);
     } else if (base.endsWith('.gz')) {
-        console.log(`gz 해제 중: ${filePath}`);
+        console.log(`������ gz 해제 중: ${filePath}`);
         const destPath = filePath.replace(/\.gz$/, '');
         await new Promise((resolve, reject) => {
             const rs = fs.createReadStream(filePath);
@@ -122,7 +122,7 @@ async function autoExtractIfNeeded(filePath) {
             gunzip.on('error', reject);
         });
         fs.unlinkSync(filePath);
-        console.log(`해제 완료 (gz): ${destPath}`);
+        console.log(`✅ 해제 완료 (gz): ${destPath}`);
     } else {
         // 일반 파일은 그대로 둠
     }
@@ -152,7 +152,7 @@ async function prepareSendFile(inputPath, packMode) {
         // 폴더 + tar/targz/gz => tar or tar.gz
         if (packMode === 'tar' || packMode === 'none') {
             outPath = path.join(tmpDir, `${baseName}.tar`);
-            console.log(`폴더 tar 생성 중: ${outPath}`);
+            console.log(`������ 폴더 tar 생성 중: ${outPath}`);
             await tar.c(
                 {
                     file: outPath,
@@ -163,7 +163,7 @@ async function prepareSendFile(inputPath, packMode) {
             );
         } else if (packMode === 'targz' || packMode === 'gz') {
             outPath = path.join(tmpDir, `${baseName}.tar.gz`);
-            console.log(`폴더 tar.gz 생성 중: ${outPath}`);
+            console.log(`������ 폴더 tar.gz 생성 중: ${outPath}`);
             await tar.c(
                 {
                     file: outPath,
@@ -177,7 +177,7 @@ async function prepareSendFile(inputPath, packMode) {
         // 단일 파일 + tar/targz/gz
         if (packMode === 'tar') {
             outPath = path.join(tmpDir, `${baseName}.tar`);
-            console.log(`파일 tar 생성 중: ${outPath}`);
+            console.log(`������ 파일 tar 생성 중: ${outPath}`);
             await tar.c(
                 {
                     file: outPath,
@@ -188,7 +188,7 @@ async function prepareSendFile(inputPath, packMode) {
             );
         } else if (packMode === 'targz') {
             outPath = path.join(tmpDir, `${baseName}.tar.gz`);
-            console.log(`파일 tar.gz 생성 중: ${outPath}`);
+            console.log(`������ 파일 tar.gz 생성 중: ${outPath}`);
             await tar.c(
                 {
                     file: outPath,
@@ -199,7 +199,7 @@ async function prepareSendFile(inputPath, packMode) {
             );
         } else if (packMode === 'gz') {
             outPath = path.join(tmpDir, `${baseName}.gz`);
-            console.log(`파일 gz 생성 중: ${outPath}`);
+            console.log(`������ 파일 gz 생성 중: ${outPath}`);
             await new Promise((resolve, reject) => {
                 const rs = fs.createReadStream(inputPath);
                 const ws = fs.createWriteStream(outPath);
@@ -258,16 +258,16 @@ async function startServer() {
     let serverPackMode = packMode;    // /meta 에서 내려줄 값
 
     if (isDir && packMode === 'none') {
-        // 폴더 RAW 전송 모드
+        // 폴더 raw mode
         serverMode = 'folder';
         serverPackMode = 'none';
         folderBasePath = resolved;
-        console.log(`폴더 RAW 전송 모드 (tar/gz 없음): ${folderBasePath}`);
+        console.log(`������ 폴더 RAW 전송 모드 (tar/gz 없음): ${folderBasePath}`);
     } else {
         // 단일 파일 모드 (파일 또는 패킹된 폴더/파일)
         serverMode = 'single';
-        console.log(`원본 경로: ${resolved}`);
-        console.log(`패킹 모드: ${packMode}`);
+        console.log(`������ 원본 경로: ${resolved}`);
+        console.log(`������ 패킹 모드: ${packMode}`);
 
         const prep = await prepareSendFile(resolved, packMode);
         sendFilePath = prep.filePath;
@@ -278,9 +278,9 @@ async function startServer() {
         sendFileSize = s.size;
         sendFileHash = await computeSha256(sendFilePath);
 
-        console.log(`전송 대상 파일: ${sendFilePath}`);
-        console.log(`파일 크기: ${sendFileSize} bytes`);
-        console.log(`SHA-256: ${sendFileHash}`);
+        console.log(`������ 전송 대상 파일: ${sendFilePath}`);
+        console.log(`������ 파일 크기: ${sendFileSize} bytes`);
+        console.log(`������ SHA-256: ${sendFileHash}`);
     }
 
     const app = express();
@@ -328,7 +328,7 @@ async function startServer() {
         }
         if (!folderFileList) {
             folderFileList = walkFolder(folderBasePath);
-            console.log(`폴더 내 파일 개수: ${folderFileList.length}`);
+            console.log(`������ 폴더 내 파일 개수: ${folderFileList.length}`);
         }
         res.json(folderFileList);
     });
@@ -410,7 +410,7 @@ async function startServer() {
     // /download
     app.get('/download', (req, res) => {
         if (serverMode === 'folder') {
-            // 폴더 RAW 모드: /download?file=상대경로
+            // 폴더 raw 모드: /download?file=상대경로
             serveFolderFile(req, res);
             return;
         }
@@ -454,17 +454,17 @@ async function startServer() {
     });
 
     app.listen(port, host, () => {
-        console.log('\ncustomhttp 서버 모드');
-        console.log(`Host: ${host}`);
-        console.log(`Port: ${port}`);
-        console.log(`Mode: ${serverMode === 'single' ? '단일 파일/아카이브' : '폴더 RAW 구조 전송'}`);
+        console.log('\n������ customhttp 서버 모드');
+        console.log(`➡ Host: ${host}`);
+        console.log(`➡ Port: ${port}`);
+        console.log(`➡ Mode: ${serverMode === 'single' ? '단일 파일/아카이브' : '폴더 RAW 구조 전송'}`);
         if (serverMode === 'single') {
-            console.log(`PackMode: ${serverPackMode} (none/tar/gz/targz)`);
+            console.log(`➡ PackMode: ${serverPackMode} (none/tar/gz/targz)`);
         }
-        console.log(`Meta URL: http://${host}:${port}/meta`);
-        console.log(`Download URL: http://${host}:${port}/download`);
+        console.log(`➡ Meta URL: http://${host}:${port}/meta`);
+        console.log(`➡ Download URL: http://${host}:${port}/download`);
         if (serverMode === 'folder') {
-            console.log(`List URL: http://${host}:${port}/list`);
+            console.log(`➡ List URL: http://${host}:${port}/list`);
         }
         console.log('');
     });
@@ -479,8 +479,8 @@ async function simpleDownloadSingle(url, destPath, showBar, autoRelease) {
     const total = parseInt(res.headers['content-length'] || '0', 10);
     const serverHash = res.headers['x-file-sha256'];
 
-    console.log(`저장: ${destPath}`);
-    if (total) console.log(`예상 크기: ${total} bytes`);
+    console.log(`������ 저장: ${destPath}`);
+    if (total) console.log(`������ 예상 크기: ${total} bytes`);
 
     let downloaded = 0;
     const ws = fs.createWriteStream(destPath);
@@ -498,15 +498,15 @@ async function simpleDownloadSingle(url, destPath, showBar, autoRelease) {
         res.data.pipe(ws);
     });
 
-    console.log(`다운로드 완료: ${destPath}`);
+    console.log(`✅ 다운로드 완료: ${destPath}`);
 
     // 해시 검증
     if (serverHash) {
         const localHash = await computeSha256(destPath);
         if (localHash === serverHash) {
-            console.log(`해시 일치 (SHA-256): ${localHash}`);
+            console.log(`������ 해시 일치 (SHA-256): ${localHash}`);
         } else {
-            console.warn(`해시 불일치!\n  server: ${serverHash}\n  local : ${localHash}`);
+            console.warn(`⚠ 해시 불일치!\n  server: ${serverHash}\n  local : ${localHash}`);
         }
     }
 
@@ -530,13 +530,13 @@ async function rangeDownloadSingle(url, destPath, showBar, autoRelease) {
             validateStatus: (s) => s === 200 || s === 206 || s === 416
         });
     } catch (err) {
-        console.error('첫 Range 요청 실패, 일반 다운로드로 폴백:', err.message);
+        console.error('⚠ 첫 Range 요청 실패, 일반 다운로드로 폴백:', err.message);
         return simpleDownloadSingle(url, destPath, showBar, autoRelease);
     }
 
     // 1) 416 → Range 불가 (빈 파일 포함) → 일반 다운로드 폴백
     if (firstRes.status === 416) {
-        console.log('Range 요청 불가 → 일반 다운로드로 폴백합니다.');
+        console.log('⚠ Range 요청 불가 → 일반 다운로드로 폴백합니다.');
         return simpleDownloadSingle(url, destPath, showBar, autoRelease);
     }
 
@@ -544,25 +544,26 @@ async function rangeDownloadSingle(url, destPath, showBar, autoRelease) {
 
     // 2) 서버가 Range 무시하고 200으로 전체 파일 보낸 경우
     if (firstRes.status === 200) {
-        console.log('서버가 Range를 무시하고 전체 파일(200) 응답 → 일반 다운로드로 처리');
+        console.log('ℹ 서버가 Range를 무시하고 전체 파일(200) 응답 → 일반 다운로드 경로로 처리');
+        // 이미 받은 데이터를 쓰고 끝낼 수도 있지만, 코드 단순화를 위해 다시 simpleDownload 호출
         return simpleDownloadSingle(url, destPath, showBar, autoRelease);
     }
 
     // 여기까지 왔다면 206 Partial Content
     const cr = firstRes.headers['content-range']; // 예: bytes 0-0/12345
     if (!cr || !cr.includes('/')) {
-        console.log('Content-Range 헤더가 없어 Range 모드를 사용할 수 없음 → 일반 다운로드로 폴백');
+        console.log('⚠ Content-Range 헤더가 없어 Range 모드를 사용할 수 없음 → 일반 다운로드로 폴백');
         return simpleDownloadSingle(url, destPath, showBar, autoRelease);
     }
 
     const total = parseInt(cr.split('/')[1], 10);
     if (!Number.isFinite(total) || total <= 0) {
-        console.log('파일 크기가 0 또는 알 수 없음 → 일반 다운로드로 폴백');
+        console.log('⚠ 파일 크기가 0 또는 알 수 없음 → 일반 다운로드로 폴백');
         return simpleDownloadSingle(url, destPath, showBar, autoRelease);
     }
 
-    console.log(`저장: ${destPath}`);
-    console.log(`예상 크기: ${total} bytes`);
+    console.log(`������ 저장: ${destPath}`);
+    console.log(`������ 예상 크기: ${total} bytes`);
 
     const fd = fs.openSync(destPath, 'w');
     let downloaded = 0;
@@ -598,15 +599,15 @@ async function rangeDownloadSingle(url, destPath, showBar, autoRelease) {
     }
 
     fs.closeSync(fd);
-    console.log(`다운로드 완료: ${destPath}`);
+    console.log(`✅ 다운로드 완료: ${destPath}`);
 
     // 해시 검증
     if (serverHash) {
         const localHash = await computeSha256(destPath);
         if (localHash === serverHash) {
-            console.log(`해시 일치 (SHA-256): ${localHash}`);
+            console.log(`������ 해시 일치 (SHA-256): ${localHash}`);
         } else {
-            console.warn(`해시 불일치!\n  server: ${serverHash}\n  local : ${localHash}`);
+            console.warn(`⚠ 해시 불일치!\n  server: ${serverHash}\n  local : ${localHash}`);
         }
     }
 
@@ -623,18 +624,19 @@ async function startClient() {
     ensureDir(saveDir);
 
     const baseUrl = `http://${host}:${port}`;
-    console.log(`서버: ${baseUrl}`);
-    console.log(`저장 디렉터리: ${saveDir}`);
-    console.log(`progress bar: ${hasB ? 'ON (-b)' : 'OFF'}`);
-    console.log(`auto release: ${hasNoRelease ? 'OFF (-norelease)' : 'ON'}`);
-    console.log(`chunk(range) 모드: ${hasC ? 'ON (-c)' : 'OFF'}`);
+    console.log(`������ 서버: ${baseUrl}`);
+    console.log(`������ 저장 디렉터리: ${saveDir}`);
+    console.log(`������ progress bar: ${hasB ? 'ON (-b)' : 'OFF'}`);
+    console.log(`������ auto release: ${hasNoRelease ? 'OFF (-norelease)' : 'ON'}`);
+    console.log(`������ chunk(range) 모드: ${hasC ? 'ON (-c)' : 'OFF'}`);
 
     let meta;
     try {
         const res = await axios.get(`${baseUrl}/meta`);
         meta = res.data;
     } catch (err) {
-        console.error('/meta 요청 실패:', err.message);
+        console.error('❌ /meta 요청 실패:', err.message);
+        console.error('   서버와 버전이 안 맞거나 /meta 미구현일 수 있습니다.');
         process.exit(1);
     }
 
@@ -657,27 +659,24 @@ async function startClient() {
         try {
             listRes = await axios.get(`${baseUrl}/list`);
         } catch (err) {
-            console.error('/list 요청 실패:', err.message);
+            console.error('❌ /list 요청 실패:', err.message);
             process.exit(1);
         }
 
         const files = listRes.data || [];
-        console.log(`받을 파일 개수: ${files.length}`);
-
-        // 여기에서 rootName 폴더를 만들어서 그 아래에 저장
-        const rootDir = path.join(saveDir, meta.rootName || 'folder');
-        ensureDir(rootDir);
+        console.log(`������ 받을 파일 개수: ${files.length}`);
 
         for (const rel of files) {
-            const destPath = path.join(rootDir, rel);
+            const destPath = path.join(saveDir, rel);
             ensureDir(path.dirname(destPath));
 
             const encoded = encodeURIComponent(rel);
             const url = `${baseUrl}/download?file=${encoded}`;
 
-            console.log(`\n파일 다운로드: ${rel}`);
+            console.log(`\n������ 파일 다운로드: ${rel}`);
 
-            const autoRelease = false; // RAW 모드에서는 압축 파일이 아님
+            // 폴더 RAW 모드에서는 autoRelease=false (우리가 새로 생성한 tar/gz가 아니기 때문)
+            const autoRelease = false;
 
             if (hasC) {
                 await rangeDownloadSingle(url, destPath, hasB, autoRelease);
@@ -686,9 +685,9 @@ async function startClient() {
             }
         }
 
-        console.log('\n폴더 RAW 다운로드 완료');
+        console.log('\n������ 폴더 RAW 다운로드 완료');
     } else {
-        console.error('meta.mode 값이 알 수 없습니다:', meta.mode);
+        console.error('❌ meta.mode 값이 알 수 없습니다:', meta.mode);
         process.exit(1);
     }
 }
@@ -705,7 +704,7 @@ async function startClient() {
         console.log(`
 사용법:
   서버 모드(보낼 때):
-    node customhttp.js -s -f <파일 또는 폴더 경로> [-t] [-g] [-tg] [-p 포트] [-h 호스트]
+    customhttp -s -f <파일 또는 폴더 경로> [-t] [-g] [-tg] [-p 포트] [-h 호스트]
 
       -t      : tar로 묶기 (압축 없음)
       -g      : gzip 압축 (파일이면 .gz, 폴더면 tar.gz 역할)
@@ -713,7 +712,7 @@ async function startClient() {
       (없음)  : 파일은 그대로, 폴더는 tar/gz 없이 폴더 구조 그대로 RAW 전송
 
   클라이언트 모드(받을 때):
-    node customhttp.js -r [-f 저장폴더] [-b] [-c] [-norelease] [-p 포트] [-h 서버IP]
+    customhttp -r [-f 저장폴더] [-b] [-c] [-norelease] [-p 포트] [-h 서버IP]
 
       -b          : 진행률(progress bar) 표시
       -c          : Range 기반 chunk 다운로드 사용
@@ -721,13 +720,15 @@ async function startClient() {
 
 예:
   서버:
-    node customhttp.js -s -f ../testjar -p 8833 -h 0.0.0.0
-    node customhttp.js -s -f ../testjar -tg -p 8833 -h 0.0.0.0
+    customhttp -s -f ./data
+    customhttp -s -f ./data -t
+    customhttp -s -f ./data -tg -p 8833 -h 0.0.0.0
 
   클라이언트:
-    node customhttp.js -r -f ./downloads -p 8833
-    node customhttp.js -r -f ./downloads -b -c -p 8833
-    node customhttp.js -r -f ./downloads -c -p 8833 -norelease
+    customhttp -r -f ./downloads
+    customhttp -r -f ./downloads -b
+    customhttp -r -f ./downloads -b -c
+    customhttp -r -f ./downloads -b -c -norelease
 `);
     }
 })();
