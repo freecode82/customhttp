@@ -1,0 +1,145 @@
+#!/usr/bin/env node
+
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const archiver = require('archiver');
+const axios = require('axios');
+
+// -------------------------
+// 옵션 파싱
+// -------------------------
+const args = process.argv.slice(2);
+const hasSend = args.includes('-s');
+const hasRecv = args.includes('-r');
+const fIndex = args.indexOf('-f');
+const pIndex = args.indexOf('-p');
+const hIndex = args.indexOf('-h');
+
+const targetPath = fIndex !== -1 ? args[fIndex + 1] : null;
+const port = pIndex !== -1 ? parseInt(args[pIndex + 1]) : 80;
+const host = hIndex !== -1 ? args[hIndex + 1] : 'localhost';
+
+// -------------------------
+// -s : 보내기(Server Mode)
+// -------------------------
+if (hasSend) {
+    if (!targetPath) {
+        console.error('Error: -s 옵션에는 -f <보낼 파일/폴더>가 필요합니다.');
+        process.exit(1);
+    }
+
+    const resolvedPath = path.resolve(targetPath);
+
+    if (!fs.existsSync(resolvedPath)) {
+        console.error(`Error: 파일 또는 폴더가 존재하지 않습니다 → ${resolvedPath}`);
+        process.exit(1);
+    }
+
+    const app = express();
+
+    app.get('/download', (req, res) => {
+        const stat = fs.statSync(resolvedPath);
+
+        if (stat.isFile()) {
+            // 단일 파일 그대로 전송
+            const fileName = path.basename(resolvedPath);
+            res.download(resolvedPath, fileName);
+        } else {
+            // 폴더 → ZIP 압축 후 전송
+            const zipName = path.basename(resolvedPath) + ".zip";
+            res.setHeader("Content-Type", "application/zip");
+            res.setHeader("Content-Disposition", `attachment; filename="${zipName}"`);
+
+            const archive = archiver("zip");
+            archive.directory(resolvedPath, false);
+            archive.pipe(res);
+            archive.finalize();
+        }
+    });
+
+    app.listen(port, host, () => {
+        console.log(`������ Sender mode activated`);
+        console.log(`➡ 보내는 경로: ${resolvedPath}`);
+        console.log(`➡ 포트: ${port}`);
+        console.log(`➡ 바인딩 주소: ${host}`);
+        console.log(`➡ 다운로드 URL: http://${host}:${port}/download`);
+    });
+
+    return;
+}
+
+// -------------------------
+// -r : 받기(Client Mode)
+// -------------------------
+if (hasRecv) {
+
+    const downloadHost = host;  // -h 값이 서버주소가 됨
+    const downloadUrl = `http://${downloadHost}:${port}/download`;
+
+    console.log(`������ Connecting to ${downloadUrl} ...`);
+
+    (async () => {
+        try {
+            const res = await axios({
+                url: downloadUrl,
+                method: 'GET',
+                responseType: 'stream'
+            });
+
+            // 서버에서 파일명 가져오기
+            const disposition = res.headers['content-disposition'];
+            let fileName = 'downloaded_file';
+
+            if (disposition && disposition.includes('filename=')) {
+                fileName = disposition.split('filename=')[1].replace(/"/g, '');
+            }
+
+            // 저장 경로 설정
+            let savePath;
+
+            if (targetPath) {
+                const resolvedSaveDir = path.resolve(targetPath);
+
+                if (!fs.existsSync(resolvedSaveDir)) {
+                    console.log(`������ 다운로드 폴더가 없어서 생성: ${resolvedSaveDir}`);
+                    fs.mkdirSync(resolvedSaveDir, { recursive: true });
+                }
+
+                savePath = path.join(resolvedSaveDir, fileName);
+            } else {
+                savePath = path.join(process.cwd(), fileName);
+            }
+
+            // 파일 다운로드
+            const writer = fs.createWriteStream(savePath);
+            res.data.pipe(writer);
+
+            writer.on('finish', () => {
+                console.log(`✅ 다운로드 완료: ${savePath}`);
+            });
+
+        } catch (err) {
+            console.error('❌ 다운로드 실패:', err.message);
+        }
+    })();
+
+    return;
+}
+
+// -------------------------
+// 옵션 없음 → 사용법 표시
+// -------------------------
+console.log(`
+사용법:
+  보낼 때(서버):
+    customhttp -s -f <파일/폴더경로> [-p 포트] [-h 바인딩IP]
+
+  받을 때(클라이언트):
+    customhttp -r [-f 저장경로] [-p 포트] [-h 서버IP]
+
+예시:
+  customhttp -s -f ./upload -p 9000 -h 0.0.0.0
+  customhttp -r -f ./downloads -p 9000 -h 192.168.0.10
+  customhttp -r   (현재 폴더에 저장)
+`);
